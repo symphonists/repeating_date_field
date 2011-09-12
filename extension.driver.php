@@ -1,43 +1,43 @@
 <?php
-	
-	class Extension_RepeatingDateField extends Extension {
-	/*-------------------------------------------------------------------------
-		Definition:
-	-------------------------------------------------------------------------*/
-		
-		public static $params = null;
-		
+
+	/**
+	 * @package repeating_date_field
+	 */
+
+	/**
+	 * A field that generates, stores and filters repeating dates.
+	 */
+	class Extension_Repeating_Date_Field extends Extension {
+		/**
+		 * Extension information.
+		 */
 		public function about() {
 			return array(
 				'name'			=> 'Field: Repeating Date',
-				'version'		=> '1.0.6',
-				'release-date'	=> '2009-05-15',
+				'version'		=> '1.1',
+				'release-date'	=> '2011-09-13',
 				'author'		=> array(
 					'name'			=> 'Rowan Lewis',
-					'website'		=> 'http://pixelcarnage.com/',
-					'email'			=> 'rowan@pixelcarnage.com'
+					'website'		=> 'http://rowanlewis.com/',
+					'email'			=> 'me@rowanlewis.com'
 				),
 				'description'	=> 'A field that generates, stores and filters repeating dates.'
 			);
 		}
-		
-		public function getSubscribedDelegates() {
-			return array(
-				array(
-					'page'		=> '/frontend/',
-					'delegate'	=> 'ManipulatePageParameters',
-					'callback'	=> 'buildParams'
-				)
-			);
-		}
-		
+
+		/**
+		 * Cleanup installation.
+		 */
 		public function uninstall() {
-			$this->_Parent->Database->query("DROP TABLE `tbl_fields_repeatingdate`");
+			Symphony::Database()->query("DROP TABLE `tbl_fields_repeating_date`");
 		}
-		
+
+		/**
+		 * Create configuration.
+		 */
 		public function install() {
-			return $this->_Parent->Database->query("
-				CREATE TABLE  `tbl_fields_repeatingdate` (
+			return Symphony::Database()->query("
+				CREATE TABLE  `tbl_fields_repeating_date` (
 					`id` int(11) unsigned NOT NULL auto_increment,
 					`field_id` int(11) unsigned NOT NULL,
 					`pre_populate` enum('yes','no') NOT NULL default 'no',
@@ -46,37 +46,16 @@
 				)
 			");
 		}
-		
-		public function buildParams($context) {
-			self::$params = $context['params'];
-		}
-		
-	/*-------------------------------------------------------------------------
-		Utilities:
-	-------------------------------------------------------------------------*/
-		
-		/**
-		* Get the value of $today, or a fallback.
-		* 
-		* @return integer
-		*/
-		public function getToday() {
-			$today = @strtotime(self::$params['today']);
-			
-			if (!$today) $today = time();
-			
-			return $today;
-		}
-		
+
 		/**
 		* Get the current or new link id for an entry.
-		* 
+		*
 		* @param integer $field_id The field
 		* @param integer $entry_id The entry
 		* @return string
 		*/
 		public function getEntryLinkId($field_id, $entry_id) {
-			if ($entry_id) $link_id = $this->_Parent->Database->fetchVar('link_id', 0, "
+			if ($entry_id) $link_id = Symphony::Database()->fetchVar('link_id', 0, "
 				SELECT
 					e.*
 				FROM
@@ -85,28 +64,28 @@
 					e.entry_id = {$entry_id}
 				LIMIT 1
 			");
-			
+
 			if (!isset($link_id) or empty($link_id)) {
 				$link_id = strtr((string)microtime(true), '.', '0');
 			}
-			
+
 			return $link_id;
 		}
-		
+
 		/**
 		* Get the stored date for an entry.
-		* 
+		*
 		* @param integer $data Entry data
 		* @return array
 		*/
 		public function getEntryDate($data, $field_id, $value = null) {
 			$link_id = $data['link_id'];
-			
+
 			if ($value == null) {
-				$value = $this->getToday();
+				$value = strtotime('today');
 			}
-			
-			$return = $this->_Parent->Database->fetchVar('value', 0, "
+
+			$return = Symphony::Database()->fetchVar('value', 0, "
 				SELECT
 					d.value
 				FROM
@@ -119,25 +98,25 @@
 				LIMIT
 					1
 			");
-			
+
 			if ($return == null) return $data['end'];
-			
+
 			return $return;
 		}
-		
+
 		/**
 		* Get the stored dates for an entry.
-		* 
+		*
 		* @param integer $data Entry data
 		* @return array
 		*/
 		public function getEntryDates($data, $field_id, $limit = 10) {
 			$limit = ((integer)$limit < 2 ? 2 : (integer)$limit);
 			$link_id = $data['link_id'];
-			$today = $this->getToday();
-			
+			$today = strtotime('today');
+
 			$limit /= 2;
-			$before = $this->_Parent->Database->fetch("
+			$before = Symphony::Database()->fetch("
 				SELECT
 					d.value
 				FROM
@@ -150,9 +129,9 @@
 				LIMIT
 					{$limit}
 			");
-			
+
 			$limit++;
-			$after = $this->_Parent->Database->fetch("
+			$after = Symphony::Database()->fetch("
 				SELECT
 					d.value
 				FROM
@@ -165,16 +144,16 @@
 				LIMIT
 					{$limit}
 			");
-			
+
 			if (empty($before)) $before = array();
 			if (empty($after)) $after = array();
-			
+
 			return array($before, $after);
 		}
-		
+
 		/**
 		* Get the dates to store for an entry.
-		* 
+		*
 		* @param integer $data Entry data
 		* @return array
 		*/
@@ -183,7 +162,7 @@
 			$start = $data['start'];
 			$end = $data['end'];
 			$units = $data['units'];
-			
+
 			switch ($mode) {
 				case 'years-by-date':
 					return $this->getDatesYearlyByDate($start, $end, $units);
@@ -205,14 +184,10 @@
 					break;
 			}
 		}
-		
-	/*-------------------------------------------------------------------------
-		Date calculation functions:
-	-------------------------------------------------------------------------*/
-		
+
 		/**
 		* Get an array of dates on a daily basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of days to skip
@@ -222,19 +197,19 @@
 			$skip = ((integer)$skip > 0 ? (integer)$skip : 1);
 			$current = $start; $dates = array();
 			$results = 0;
-		
+
 			while ($current <= $finish and $results < 9999) {
 				array_push($dates,$current);
-			
+
 				$current = strtotime("+{$skip} day", $current);
 			}
-		
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get an array of dates on a per week basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of weeks to skip
@@ -244,19 +219,19 @@
 			$skip = ((integer)$skip > 0 ? (integer)$skip : 1);
 			$current = $start; $dates = array();
 			$results = 0;
-			
+
 			while ($current <= $finish and $results < 9999) {
 				array_push($dates, $current);
-				
+
 				$current = strtotime("+{$skip} week", $current);
 			}
-			
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get an array of dates on a per month basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of months to skip
@@ -267,20 +242,20 @@
 			$current = $start; $dates = array();
 			$day = date('j', $start);
 			$results = 0;
-		
+
 			while ($current <= $finish and $results < 9999) {
 				array_push($dates,$current);
-			
+
 				// Skip to the next month:
 				$current = strtotime(date("Y-m-{$day} H:i:s", strtotime("+{$skip} month", $current)));
 			}
-		
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get an array of dates on a per month basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of months to skip
@@ -292,24 +267,24 @@
 			$weekday = date('D', $start);
 			$week = $this->getWeekOfMonth($start);
 			$results = 0;
-		
+
 			while ($current <= $finish and $results < 9999) {
 				if (date('D', $current) == $weekday and $this->getWeekOfMonth($current) == $week) {
 					array_push($dates,$current);
-				
+
 					// Skip to the next month:
 					$current = strtotime(date('Y-m-01 H:i:s', strtotime("+{$skip} month", $current)));
 				}
-			
+
 				$current = strtotime("+1 day", $current);
 			}
-		
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get an array of dates on a per year basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of years to skip
@@ -320,20 +295,20 @@
 			$current = $start; $dates = array();
 			$month = date('m-d', $start);
 			$results = 0;
-		
+
 			while ($current <= $finish and $results < 9999) {
 				array_push($dates,$current);
-			
+
 				// Skip to the next year:
 				$current = strtotime(date("Y-{$month} H:i:s", strtotime("+{$skip} year", $current)));
 			}
-		
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get an array of dates on a per year basis.
-		* 
+		*
 		* @param integer $start Date to start at
 		* @param integer $finish Date to finish at
 		* @param integer $skip Number of years to skip
@@ -346,46 +321,46 @@
 			$weekday = date('D', $start);
 			$week = $this->getWeekOfYear($start);
 			$results = 0;
-		
+
 			while ($current <= $finish and $results < 9999) {
 				if (date('D', $current) == $weekday and $this->getWeekOfYear($current) == $week) {
 					array_push($dates,$current);
-				
+
 					// Skip to the next month:
 					$current = strtotime(date("Y-{$month}-01 H:i:s", strtotime("+{$skip} year", $current)));
 				}
-			
+
 				$current = strtotime("+1 day", $current);
 			}
-		
+
 			return $dates;
 		}
-	
+
 		/**
 		* Get the week of the month by date
-		* 
+		*
 		* @param integer $date Date find the week of
 		* @return integer
 		*/
 		public function getWeekOfMonth($date) {
 			$start = strtotime(gmdate('Y-m-01', $date)) / (86400 * 7);
 			$current = $date / (86400 * 7);
-		
+
 			return floor($current - $start) + 1;
 		}
-	
+
 		/**
 		* Get the week of the year by date
-		* 
+		*
 		* @param integer $date Date find the week of
 		* @return integer
 		*/
 		public function getWeekOfYear($date) {
 			$start = strtotime(gmdate('Y-01-01', $date)) / (86400 * 7);
 			$current = $date / (86400 * 7);
-		
+
 			return floor($current - $start) + 1;
 		}
 	}
-	
+
 ?>
