@@ -2,11 +2,11 @@
 
 A field that generates, stores and filters repeating dates.
 
-__Version:__ 1.1
-__Date:__ 13 September 2011
-__Requirements:__ Symphony 2.2
-__Author:__ Rowan Lewis <me@rowanlewis.com>
-__GitHub Repository:__ <http://github.com/rowan-lewis/repeating_date_field>
+__Version:__ 1.1  
+__Date:__ 13 September 2011  
+__Requirements:__ Symphony 2.2  
+__Author:__ Rowan Lewis <me@rowanlewis.com>  
+__GitHub Repository:__ <http://github.com/rowan-lewis/repeating_date_field>  
 
 
 ## Installation
