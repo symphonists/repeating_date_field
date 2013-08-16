@@ -11,8 +11,8 @@
 		protected $_driver = null;
 		protected $filter = 0;
 
-		public function __construct(&$parent) {
-			parent::__construct($parent);
+		public function __construct() {
+			parent::__construct();
 
 			$this->_name = 'Repeating Date';
 			$this->_driver = Symphony::ExtensionManager()->create('repeating_date_field');
@@ -329,7 +329,7 @@
 			$units = @((integer)$data['units'] > 0 ? (integer)$data['units'] : 1);
 
 			$input = Widget::Input(
-				"fields{$prefix}[{$name}][units]{$suffix}", $units
+				"fields{$prefix}[{$name}][units]{$suffix}", (string)$units
 			);
 			$input->setAttribute('size', '2');
 
@@ -502,7 +502,7 @@
 		 * @return array
 		 *	the processed field data.
 		 */
-		public function processRawFieldData($data, &$status, $simulate = false, $entry_id = null) {
+		public function processRawFieldData($data, &$status, &$message=null, $simulate = false, $entry_id = null) {
 			$status = self::__OK__;
 			$data = array_merge(array(
 				'start'		=> null,

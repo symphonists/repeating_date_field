@@ -9,23 +9,6 @@
 	 */
 	class Extension_Repeating_Date_Field extends Extension {
 		/**
-		 * Extension information.
-		 */
-		public function about() {
-			return array(
-				'name'			=> 'Field: Repeating Date',
-				'version'		=> '1.1',
-				'release-date'	=> '2011-09-13',
-				'author'		=> array(
-					'name'			=> 'Rowan Lewis',
-					'website'		=> 'http://rowanlewis.com/',
-					'email'			=> 'me@rowanlewis.com'
-				),
-				'description'	=> 'A field that generates, stores and filters repeating dates.'
-			);
-		}
-
-		/**
 		 * Cleanup installation.
 		 */
 		public function uninstall() {
@@ -43,7 +26,7 @@
 					`pre_populate` enum('yes','no') NOT NULL default 'no',
 					PRIMARY KEY (`id`),
 					KEY `field_id` (`field_id`)
-				)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 			");
 		}
 
